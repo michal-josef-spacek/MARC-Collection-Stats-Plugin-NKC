@@ -1,0 +1,9 @@
+=pod
+
+=encoding utf8
+
+=head1 NAME
+
+MARC::Collection::Stats::Plugin::NKC - MARC collection statistics plugins for the Czech National Library.
+
+=cut
