@@ -7,6 +7,7 @@ use warnings;
 use Class::Utils qw(set_params split_params);
 use English;
 use Error::Pure qw(err);
+use Error::Pure::Utils qw(clean);
 use List::Util 1.33 qw(any);
 use MARC::Field008;
 use MARC::Leader 0.04;
@@ -58,6 +59,7 @@ sub process {
 	};
 	if ($EVAL_ERROR) {
 		push @keys, 'not_material';
+		clean();
 	}
 
 	if (! @keys) {
@@ -74,6 +76,7 @@ sub process {
 				print "CNB id '$cnb' has not valid 008 field.\n";
 			}
 			push @keys, 'not_valid_008';
+			clean();
 		} else {
 			if ($field_008->date1 =~ m/[u\|\ ]/ms) {
 				push @keys, 'not_comparable_008_date';

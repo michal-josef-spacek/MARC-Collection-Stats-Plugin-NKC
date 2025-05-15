@@ -25,6 +25,7 @@ requires:
   Class::Utils: 0.03
   English: 0
   Error::Pure: 0
+  Error::Pure::Utils: 0
   List::Util: 1.33
   MARC::Field008: 0
   MARC::Leader: 0.04

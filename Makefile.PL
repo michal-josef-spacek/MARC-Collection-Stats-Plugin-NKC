@@ -21,6 +21,7 @@ recursive_author_tests('xt');
 requires 'Class::Utils' => 0.03;
 requires 'English' => 0;
 requires 'Error::Pure' => 0;
+requires 'Error::Pure::Utils' => 0;
 requires 'List::Util' => 1.33;
 requires 'MARC::Field008' => 0;
 requires 'MARC::Leader' => 0.04;
