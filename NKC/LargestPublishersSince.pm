@@ -13,10 +13,6 @@ use MARC::Field008;
 use MARC::Leader 0.04;
 use MARC::Leader::Utils qw(material_type);
 use NKC::MARC::Cleanups qw(clean_publisher_name);
-use Readonly;
-
-Readonly::Array our @NOT_PUBLISHERS => qw(not_comparable_008_date not_book
-	not_material not_since not_valid_008);
 
 our $VERSION = 0.01;
 
@@ -48,7 +44,7 @@ sub name {
 sub process {
 	my ($self, $marc_record) = @_;
 
-	my @keys;
+	my $process = 0;
 
 	my $leader_string = $marc_record->leader;
 	my $leader = MARC::Leader->new(
@@ -58,11 +54,9 @@ sub process {
 		material_type($leader);
 	};
 	if ($EVAL_ERROR) {
-		push @keys, 'not_material';
+		$self->{'struct'}->{'stats'}->{'not_material'}++;
 		clean();
-	}
-
-	if (! @keys) {
+	} else {
 		my $field_008_string = $marc_record->field('008')->as_string;
 		my $field_008 = eval {
 			MARC::Field008->new(
@@ -75,32 +69,25 @@ sub process {
 			if ($self->{'debug'}) {
 				print "CNB id '$cnb' has not valid 008 field.\n";
 			}
-			push @keys, 'not_valid_008';
+			$self->{'struct'}->{'stats'}->{'not_valid_008'}++;
 			clean();
 		} else {
 			if ($field_008->date1 =~ m/[u\|\ ]/ms) {
-				push @keys, 'not_comparable_008_date';
+				$self->{'struct'}->{'stats'}->{'not_comparable_008_date'}++;
 			} elsif ($field_008->date1 < $self->{'year_from'}) {
-				push @keys, 'not_since';
+				$self->{'struct'}->{'stats'}->{'not_since'}++;
+			} else {
+				if ($material_type eq 'book') {
+					my @keys;
+					$self->_process_publisher($marc_record, \@keys, '260');
+					$self->_process_publisher($marc_record, \@keys, '264');
+					foreach my $key (@keys) {
+						$self->{'struct'}->{'stats'}->{'helper'}->{$key}++;
+					}
+				} else {
+					$self->{'struct'}->{'stats'}->{'not_book'}++;
+				}
 			}
-		}
-	}
-
-	if (! @keys) {
-
-		if ($material_type eq 'book') {
-			$self->_process_publisher($marc_record, \@keys, '260');
-			$self->_process_publisher($marc_record, \@keys, '264');
-		} else {
-			push @keys, 'not_book';
-		}
-	}
-
-	foreach my $key (@keys) {
-		if (any { $key eq $_ } @NOT_PUBLISHERS) {
-			$self->{'struct'}->{'stats'}->{'largest_publishers'}->{$key}++;
-		} else {
-			$self->{'struct'}->{'stats'}->{'helper'}->{$key}++;
 		}
 	}
 
@@ -120,7 +107,7 @@ sub postprocess {
 			last;
 		}
 
-		$self->{'struct'}->{'stats'}->{'largest_publishers'}->{'publishers'}->{$key}
+		$self->{'struct'}->{'stats'}->{'largest_book_publishers'}->{$key}
 			= $self->{'struct'}->{'stats'}->{'helper'}->{$key};
 	}
 
@@ -138,7 +125,7 @@ sub _init {
 	$self->{'struct'}->{'parameters'}->{'year_from'} = $self->{'year_from'};
 	$self->{'struct'}->{'parameters'}->{'largests_publishers_count'} = $self->{'largests_publishers_count'};
 
-	$self->{'struct'}->{'stats'}->{'largest_publishers'} = {};
+	$self->{'struct'}->{'stats'}->{'largest_book_publishers'} = {};
 	$self->{'struct'}->{'stats'}->{'helper'} = {};
 
 	return;
